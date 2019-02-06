@@ -11,8 +11,10 @@ def get_game_boxscore(team_id, game_id):
     :param boxscore_stats: dictionary with boxscore stats
     :param goals_opp: opponent goals to calculate win
     """
-    game_url = "https://statsapi.web.nhl.com/api/v1/game/" + str(game_id) + "/boxscore"
-    game_boxscore = requests.get(game_url).json()
+    boxscore_url = (
+        "https://statsapi.web.nhl.com/api/v1/game/" + str(game_id) + "/boxscore"
+    )
+    game_boxscore = requests.get(boxscore_url).json()
     # Check if team is in game
     if game_boxscore["teams"]["home"]["team"]["id"] == team_id:
         boxscore_stats = game_boxscore["teams"]["home"]["teamStats"]["teamSkaterStats"]
@@ -28,7 +30,31 @@ def get_game_boxscore(team_id, game_id):
         ]
     else:
         print("Error: Team not found in game")
-    boxscore_stats["result"] = "win" if boxscore_stats["goals"] > goals_opp else "lose"
+    # Assign result
+    if boxscore_stats["goals"] > goals_opp:
+        boxscore_stats["result"] = "win"
+    elif boxscore_stats["goals"] < goals_opp:
+        boxscore_stats["result"] = "loss"
+    else:  # a tie after overtime, goes to shootout
+        # Check linescore for shootout information
+        linescore_url = (
+            "https://statsapi.web.nhl.com/api/v1/game/" + str(game_id) + "/linescore"
+        )
+        game_linescore = requests.get(linescore_url).json()
+        if boxscore_stats["venue"] == "home":
+            boxscore_stats["result"] = (
+                "win"
+                if game_linescore["shootoutInfo"]["home"]["scores"]
+                > game_linescore["shootoutInfo"]["away"]["scores"]
+                else "loss"
+            )
+        else:
+            boxscore_stats["result"] = (
+                "win"
+                if game_linescore["shootoutInfo"]["away"]["scores"]
+                > game_linescore["shootoutInfo"]["home"]["scores"]
+                else "loss"
+            )
     return boxscore_stats
 
 
@@ -128,7 +154,6 @@ def main():
     n = 0
     for game in season_stats:
         n += 1
-        print(game)
         create_game(
             conn,
             (
