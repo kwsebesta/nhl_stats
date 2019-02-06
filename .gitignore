@@ -1,2 +1,6 @@
 nhl-venv/
 .vscode/settings.json
+__pycache__/sqlcmds.cpython-37.pyc
+.ipynb_checkpoints/Scrape-expl-checkpoint.ipynb
+.vscode/launch.json
+nhl-stats.sqlite3
