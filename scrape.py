@@ -58,14 +58,16 @@ def get_game_boxscore(team_id, game_id):
     return boxscore_stats
 
 
-def get_team_stats(team_name):
+def get_team_stats(team_name, team_id):
     """Retrieve team stats for date range"""
+    """
     # Get teams
     teams = requests.get("https://statsapi.web.nhl.com/api/v1/teams").json()
     # Search for specific teams
     for team in teams["teams"]:
         if team["name"] == team_name:
             team_id = team["id"]
+    """
     # Load season games
     # Choose dates in yyyy-mm-dd
     start_date = "2016-09-01"
@@ -94,6 +96,22 @@ def get_team_stats(team_name):
     return boxscore_stats
 
 
+def get_teams():
+    """
+    Retrieve NHL team names
+    :param team_names: list of team names
+    :param team_ids: list of team ids
+    :return: team_names, team_ids
+    """
+    teams = requests.get("https://statsapi.web.nhl.com/api/v1/teams").json()
+    team_names, team_ids = [], []
+    # Search for specific teams
+    for team in teams["teams"]:
+        team_names.append(team["name"])
+        team_ids.append(team["id"])
+    return team_names, team_ids
+
+
 def create_game(conn, game, team):
     """
     Create a new game into a teams record table if it doesn't exist
@@ -120,10 +138,15 @@ def create_game(conn, game, team):
 
 def main():
     """Main function"""
-    team_name = "Chicago Blackhawks"
-    season_stats = get_team_stats(team_name)
+    team_names, team_ids = get_teams()
 
-    sql_create_team_table = """CREATE TABLE IF NOT EXISTS {0} (
+    conn = sqlcmds.create_connection("nhl-stats.sqlite3")
+
+    # Insert team's season data into SQLite database
+    for i, team_name in enumerate(team_names):
+        season_stats = get_team_stats(team_name, team_ids[i])
+
+        sql_create_team_table = """CREATE TABLE IF NOT EXISTS {0} (
                                         season int(4),
                                         id int(10), 
                                         venue char(4),
@@ -140,42 +163,41 @@ def main():
                                         giveaways int(3), 
                                         hits int(3)
                                     );""".format(
-        "[" + team_name + "]"
-    )
-
-    # connect to database and create table
-    conn = sqlcmds.create_connection("nhl-stats.sqlite3")
-    if conn is not None:
-        # Create team table
-        sqlcmds.create_table(conn, sql_create_team_table)
-    else:
-        print("Error! Cannot create database connection")
-
-    n = 0
-    for game in season_stats:
-        n += 1
-        create_game(
-            conn,
-            (
-                game // 10 ** 6,
-                game,
-                season_stats[game]["venue"],
-                season_stats[game]["result"],
-                season_stats[game]["goals"],
-                season_stats[game]["pim"],
-                season_stats[game]["shots"],
-                season_stats[game]["powerPlayPercentage"],
-                season_stats[game]["powerPlayGoals"],
-                season_stats[game]["powerPlayOpportunities"],
-                season_stats[game]["faceOffWinPercentage"],
-                season_stats[game]["blocked"],
-                season_stats[game]["takeaways"],
-                season_stats[game]["giveaways"],
-                season_stats[game]["hits"],
-            ),
-            team_name,
+            "[" + team_name + "]"
         )
-    print(n)
+
+        if conn is not None:
+            # Create team table
+            sqlcmds.create_table(conn, sql_create_team_table)
+        else:
+            print("Error! Cannot create database connection")
+
+        # Insert season games into SQLite database
+        n = 0
+        for game in season_stats:
+            n += 1
+            create_game(
+                conn,
+                (
+                    game // 10 ** 6,
+                    game,
+                    season_stats[game]["venue"],
+                    season_stats[game]["result"],
+                    season_stats[game]["goals"],
+                    season_stats[game]["pim"],
+                    season_stats[game]["shots"],
+                    season_stats[game]["powerPlayPercentage"],
+                    season_stats[game]["powerPlayGoals"],
+                    season_stats[game]["powerPlayOpportunities"],
+                    season_stats[game]["faceOffWinPercentage"],
+                    season_stats[game]["blocked"],
+                    season_stats[game]["takeaways"],
+                    season_stats[game]["giveaways"],
+                    season_stats[game]["hits"],
+                ),
+                team_name,
+            )
+            print(team_name, n)
 
 
 if __name__ == "__main__":
