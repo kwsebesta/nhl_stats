@@ -34,7 +34,7 @@ def main():
     X = bhawks_stats[feature_cols]
     X["venue"] = X["venue"].map({"home": 1, "away": 0})  # integer encode venue
 
-    y = bhawks_stats.result
+    y = bhawks_stats["result"]
     y = y.map({"win": 1, "loss": 0})  # map to binary for logistic regression
 
     kfold = model_selection.KFold(n_splits=10, random_state=0)
