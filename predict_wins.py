@@ -1,4 +1,4 @@
-# ~/nhl-stats/nhl-venv/bin/ python
+#!~/nhl-stats/nhl-venv/bin/ python
 """predict_wins.py predict wins of an NHL team"""
 import pandas as pd
 import sqlalchemy
