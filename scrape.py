@@ -1,4 +1,4 @@
-# ~/nhl-stats/nhl-venv/bin/ python
+# ~/projects/nhl-stats/nhl-venv/bin/ python
 """scrape.py scrapes the nhl website to download stats"""
 import time
 import requests
@@ -58,20 +58,14 @@ def get_game_boxscore(team_id, game_id):
     return boxscore_stats
 
 
-def get_team_stats(team_name, team_id):
+def get_team_stats(team_name, team_id, season):
     """Retrieve team stats for date range"""
-    """
-    # Get teams
-    teams = requests.get("https://statsapi.web.nhl.com/api/v1/teams").json()
-    # Search for specific teams
-    for team in teams["teams"]:
-        if team["name"] == team_name:
-            team_id = team["id"]
-    """
+
     # Load season games
     # Choose dates in yyyy-mm-dd
-    start_date = "2016-09-01"
-    end_date = "2017-05-31"
+    start_date = str(season) + "-09-01"
+    end_date = str(season + 1) + "-05-31"
+
     url = (
         "https://statsapi.web.nhl.com/api/v1/schedule?teamId="
         + str(team_id)
@@ -140,11 +134,14 @@ def main():
     """Main function"""
     team_names, team_ids = get_teams()
 
+    # Pick season, choose beginning year of season
+    season = 2018
+
     conn = sqlcmds.create_connection("nhl-stats.sqlite3")
 
     # Insert team's season data into SQLite database
     for i, team_name in enumerate(team_names):
-        season_stats = get_team_stats(team_name, team_ids[i])
+        season_stats = get_team_stats(team_name, team_ids[i], season)
 
         sql_create_team_table = """CREATE TABLE IF NOT EXISTS {0} (
                                         season int(4),
