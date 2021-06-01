@@ -65,7 +65,7 @@ toml==0.10.0
 -e git+https://github.com/kwsebesta/tools-and-scripts.git@9ce79fa5ff61ac122067a85c4c83fc4b260a69fb#egg=tools_and_scripts
 tornado==5.1.1
 traitlets==4.3.2
-urllib3==1.24
+urllib3==1.26.5
 wcwidth==0.1.7
 webencodings==0.5.1
 widgetsnbextension==3.4.2
